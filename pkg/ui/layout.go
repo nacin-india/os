@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -24,9 +23,14 @@ type UI struct {
 // createTextView creates a new text view with specified properties
 func createTextView(color tcell.Color, bgColor tcell.Color, align int) *tview.TextView {
 	tv := tview.NewTextView()
+	// Use only high contrast colors - white or black
+	if color != tcell.ColorWhite && color != tcell.ColorBlack {
+		color = tcell.ColorWhite // Default to white for better contrast
+	}
 	tv.SetTextColor(color)
 	tv.SetTextAlign(align)
 	tv.SetBackgroundColor(bgColor)
+	tv.SetDynamicColors(true) // Enable style tags
 	return tv
 }
 
@@ -45,7 +49,7 @@ func NewUI() *UI {
 	app := tview.NewApplication()
 	mainFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 
-	// Define colors
+	// Define colors - using high contrast colors only
 	darkGray := tcell.ColorDarkSlateGray
 	yellow := tcell.ColorYellow
 	white := tcell.ColorWhite
@@ -54,8 +58,8 @@ func NewUI() *UI {
 	// Create header
 	header := createTextView(white, darkGray, tview.AlignLeft)
 
-	// Create stats panel for system usage
-	stats := createTextView(white, yellow, tview.AlignRight)
+	// Create stats panel for system usage - use black text on yellow for contrast
+	stats := createTextView(black, yellow, tview.AlignRight)
 
 	// Create header flex without stats
 	headerFlex := tview.NewFlex().SetDirection(tview.FlexColumn)
@@ -75,10 +79,10 @@ func NewUI() *UI {
 	bottomFlex.AddItem(tview.NewBox().SetBackgroundColor(yellow), 2, 0, false)
 	bottomFlex.SetBackgroundColor(yellow)
 
-	// Create footer
+	// Create footer with bold text
 	currentYear := time.Now().Year()
 	footer := createTextView(white, darkGray, tview.AlignCenter)
-	footer.SetText(fmt.Sprintf("© %d Sar Infocom. All rights reserved. ", currentYear))
+	footer.SetText(fmt.Sprintf("[::b]© %d Sar Infocom. All rights reserved.[::] ", currentYear))
 	footerFlex := createPaddedFlex(footer, darkGray, 2)
 
 	// Add all sections to the main flex layout
@@ -116,23 +120,25 @@ func (ui *UI) updateSystemInfoPeriodically() {
 		ui.app.QueueUpdateDraw(func() {
 			info := system.GetSystemInfo()
 
-			// Update header text - removed stats info
-			ui.header.SetText(fmt.Sprintf("\n\nNACIN EXAM SERVER\n\nSar Infocom Virtual Platform\n\n%s\n%s\n%s\n%s\n\n",
+			// Update header text with bold formatting
+			ui.header.SetText(fmt.Sprintf("\n\n[::b]NACIN EXAM SERVER[::]\n\n[::b]Sar Infocom Virtual Platform[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
 				info.CPUInfo,
 				info.MemoryInfo,
 				info.GPUInfo,
 				info.UptimeInfo))
 
-			// Update stats panel in the bottom yellow section - align vertically with IP addresses
-			ui.stats.SetText(fmt.Sprintf("\n%s\n%s\n%s\n%s",
+			// Update stats panel in the bottom yellow section with bold text
+			ui.stats.SetText(fmt.Sprintf("\n[::b]System Usage:[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]",
 				info.CPUUsage,
 				info.RAMUsage,
 				info.CPUTemp,
 				info.GPUTemp))
 
-			// Update middle text for IP addresses - adjust formatting to align with stats
-			ipText := "\nIP addresses:\n"
-			ipText += strings.Join(info.IPAddresses, "\n")
+			// Update middle text for IP addresses with bold text
+			ipText := "\n[::b]IP addresses:[::]\n"
+			for _, ip := range info.IPAddresses {
+				ipText += fmt.Sprintf("[::b]%s[::]\n", ip)
+			}
 			ui.middle.SetText(ipText)
 		})
 
