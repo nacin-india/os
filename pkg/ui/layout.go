@@ -133,20 +133,18 @@ func (ui *UI) updateSystemInfoPeriodically() {
 				info.GPUInfo,
 				info.UptimeInfo))
 
-			// Update stats panel in the bottom yellow section with bold text - more compact
-			ui.stats.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]",
+			// Update stats panel in the bottom yellow section with bold text
+			ui.stats.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n",
 				info.CPUUsage,
-				info.RAMUsage,
-				info.CPUTemp,
-				info.GPUTemp))
+				info.RAMUsage))
 
-			// Update middle text for IP addresses with bold text - back to multi-line format
-			ipText := "\n[::b]IP addresses:[::]\n"
+			// Update middle text for IP addresses with bold text
+			middleText := "\n[::b]IP addresses:[::]\n"
 			for _, ip := range info.IPAddresses {
-				ipText += fmt.Sprintf("[::b]%s[::]\n", ip)
+				middleText += fmt.Sprintf("[::b]%s[::]\n", ip)
 			}
 
-			ui.middle.SetText(ipText)
+			ui.middle.SetText(middleText)
 		})
 
 		time.Sleep(900 * time.Millisecond)
