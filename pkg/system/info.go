@@ -38,7 +38,7 @@ func GetSystemInfo() SystemInfo {
 	// Get CPU usage
 	cpuPercent, err := cpu.Percent(100*time.Millisecond, false)
 	if err == nil && len(cpuPercent) > 0 {
-		info.CPUUsage = fmt.Sprintf("CPU Usage: %.1f%%", cpuPercent[0])
+		info.CPUUsage = fmt.Sprintf("CPU Usage: %02d%%", int(cpuPercent[0]))
 	} else {
 		info.CPUUsage = "CPU Usage: N/A"
 	}
@@ -47,7 +47,7 @@ func GetSystemInfo() SystemInfo {
 	memInfo, err := mem.VirtualMemory()
 	if err == nil {
 		info.MemoryInfo = fmt.Sprintf("%.1f GB System Memory", float64(memInfo.Total)/(1024*1024*1024))
-		info.RAMUsage = fmt.Sprintf("RAM Usage: %.1f%%", memInfo.UsedPercent)
+		info.RAMUsage = fmt.Sprintf("RAM Usage: %02d%%", int(memInfo.UsedPercent))
 	} else {
 		info.MemoryInfo = "Memory information unavailable"
 		info.RAMUsage = "RAM Usage: N/A"
@@ -64,8 +64,8 @@ func GetSystemInfo() SystemInfo {
 
 	// Simulated values for demo
 	info.GPUInfo = "NVIDIA GeForce RTX 3080 (10GB VRAM)"
-	info.CPUTemp = fmt.Sprintf("CPU Temp: %.1f°C", 45.0+5.0*float64(time.Now().Second()%10)/10.0)
-	info.GPUTemp = fmt.Sprintf("GPU Temp: %.1f°C", 60.0+10.0*float64(time.Now().Second()%10)/10.0)
+	info.CPUTemp = fmt.Sprintf("CPU Temp: %d°C", int(45.0+5.0*float64(time.Now().Second()%10)/10.0))
+	info.GPUTemp = fmt.Sprintf("GPU Temp: %d°C", int(60.0+10.0*float64(time.Now().Second()%10)/10.0))
 
 	// Get IP addresses
 	info.IPAddresses = getIPAddresses()
