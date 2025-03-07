@@ -1,14 +1,13 @@
 package main
 
 import (
+	"log"
+
 	"github.com/nacin/nacin-os/pkg/ui"
 )
 
 func main() {
-	// Create and run the UI application
-	appUI := ui.NewUI()
-
-	if err := appUI.Run(); err != nil {
-		panic(err)
+	if err := ui.NewUI().Run(); err != nil {
+		log.Fatalf("Application error: %v", err)
 	}
 }
