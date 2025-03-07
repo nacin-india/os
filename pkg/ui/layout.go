@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -34,16 +35,6 @@ func createTextView(color tcell.Color, bgColor tcell.Color, align int) *tview.Te
 	return tv
 }
 
-// createPaddedFlex creates a flex container with padding on both sides
-func createPaddedFlex(content *tview.TextView, bgColor tcell.Color, padding int) *tview.Flex {
-	flex := tview.NewFlex().SetDirection(tview.FlexColumn)
-	flex.AddItem(tview.NewBox().SetBackgroundColor(bgColor), padding, 0, false)
-	flex.AddItem(content, 0, 1, false)
-	flex.AddItem(tview.NewBox().SetBackgroundColor(bgColor), padding, 0, false)
-	flex.SetBackgroundColor(bgColor)
-	return flex
-}
-
 // NewUI creates a new UI instance and sets up the entire UI
 func NewUI() *UI {
 	app := tview.NewApplication()
@@ -60,6 +51,7 @@ func NewUI() *UI {
 
 	// Create stats panel for system usage - use black text on yellow for contrast
 	stats := createTextView(black, yellow, tview.AlignRight)
+	stats.SetWordWrap(true) // Enable word wrap for better space utilization
 
 	// Create header flex without stats
 	headerFlex := tview.NewFlex().SetDirection(tview.FlexColumn)
@@ -70,32 +62,26 @@ func NewUI() *UI {
 
 	// Create middle section for IP addresses
 	middle := createTextView(black, yellow, tview.AlignLeft)
+	middle.SetWordWrap(true) // Enable word wrap for better space utilization
 
 	// Create bottom section with IP addresses on left and stats on right
 	bottomFlex := tview.NewFlex().SetDirection(tview.FlexColumn)
-	bottomFlex.AddItem(tview.NewBox().SetBackgroundColor(yellow), 2, 0, false)
+	bottomFlex.AddItem(tview.NewBox().SetBackgroundColor(yellow), 2, 0, false) // Restored original padding
 	bottomFlex.AddItem(middle, 0, 2, false)
 	bottomFlex.AddItem(stats, 0, 1, false)
-	bottomFlex.AddItem(tview.NewBox().SetBackgroundColor(yellow), 2, 0, false)
+	bottomFlex.AddItem(tview.NewBox().SetBackgroundColor(yellow), 2, 0, false) // Restored original padding
 	bottomFlex.SetBackgroundColor(yellow)
-
-	// Create footer with bold text
-	currentYear := time.Now().Year()
-	footer := createTextView(white, darkGray, tview.AlignCenter)
-	footer.SetText(fmt.Sprintf("[::b]© %d Sar Infocom. All rights reserved.[::] ", currentYear))
-	footerFlex := createPaddedFlex(footer, darkGray, 2)
 
 	// Add all sections to the main flex layout
 	mainFlex.AddItem(headerFlex, 0, 12, false)
-	mainFlex.AddItem(bottomFlex, 0, 24, false) // Combined yellow section
-	mainFlex.AddItem(footerFlex, 0, 1, false)
+	mainFlex.AddItem(bottomFlex, 0, 14, false) // Further reduced from 18 to 14 to make the yellow section even shorter
 
 	ui := &UI{
 		app:        app,
 		mainFlex:   mainFlex,
 		header:     header,
 		middle:     middle,
-		footer:     footer,
+		footer:     nil, // No footer needed anymore
 		stats:      stats,
 		bottomFlex: bottomFlex,
 	}
@@ -114,31 +100,52 @@ func NewUI() *UI {
 	return ui
 }
 
+// createEnhancedTitle creates a slightly larger title using box drawing characters
+func createEnhancedTitle(title string) string {
+	// Create a box around the title to make it stand out
+	topBorder := "╔" + strings.Repeat("═", len(title)+2) + "╗"
+	bottomBorder := "╚" + strings.Repeat("═", len(title)+2) + "╝"
+
+	// Build the enhanced title with spacing for better visibility
+	enhancedTitle := fmt.Sprintf("%s\n║ %s ║\n%s", topBorder, title, bottomBorder)
+
+	return enhancedTitle
+}
+
 // updateSystemInfoPeriodically updates the UI with system information every 1 second
 func (ui *UI) updateSystemInfoPeriodically() {
 	for {
 		ui.app.QueueUpdateDraw(func() {
 			info := system.GetSystemInfo()
 
-			// Update header text with bold formatting
-			ui.header.SetText(fmt.Sprintf("\n\n[::b]NACIN EXAM SERVER[::]\n\n[::b]Sar Infocom Virtual Platform[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
+			// Create a slightly enhanced title
+			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER")
+
+			// Get current year for copyright
+			copyrightText := "Made by Sar Infocom"
+
+			// Update header text with the enhanced title and other information
+			ui.header.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
+				enhancedTitle,
+				copyrightText,
 				info.CPUInfo,
 				info.MemoryInfo,
 				info.GPUInfo,
 				info.UptimeInfo))
 
-			// Update stats panel in the bottom yellow section with bold text
-			ui.stats.SetText(fmt.Sprintf("\n[::b]System Usage:[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]",
+			// Update stats panel in the bottom yellow section with bold text - more compact
+			ui.stats.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]",
 				info.CPUUsage,
 				info.RAMUsage,
 				info.CPUTemp,
 				info.GPUTemp))
 
-			// Update middle text for IP addresses with bold text
+			// Update middle text for IP addresses with bold text - back to multi-line format
 			ipText := "\n[::b]IP addresses:[::]\n"
 			for _, ip := range info.IPAddresses {
 				ipText += fmt.Sprintf("[::b]%s[::]\n", ip)
 			}
+
 			ui.middle.SetText(ipText)
 		})
 

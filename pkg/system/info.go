@@ -81,9 +81,9 @@ func formatDuration(d time.Duration) string {
 	secs := int(d.Seconds()) % 60
 
 	if days > 0 {
-		return fmt.Sprintf("%dd %02dh %02dm %02ds", days, hours, mins, secs)
+		return fmt.Sprintf("%dd %02d hours %02d minutes %02d seconds", days, hours, mins, secs)
 	}
-	return fmt.Sprintf("%02dh %02dm %02ds", hours, mins, secs)
+	return fmt.Sprintf("%02d hours %02d minutes %02d seconds", hours, mins, secs)
 }
 
 // getIPAddresses returns a list of non-loopback IPv4 addresses
