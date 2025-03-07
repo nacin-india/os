@@ -122,7 +122,7 @@ func (ui *UI) updateSystemInfoPeriodically() {
 			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER")
 
 			// Get current year for copyright
-			copyrightText := "Made by Sar Infocom"
+			copyrightText := "by Sar Infocom"
 
 			// Update header text with the enhanced title and other information
 			ui.header.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
