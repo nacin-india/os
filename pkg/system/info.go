@@ -120,7 +120,7 @@ func getIPAddresses() []string {
 
 			// Only include IPv4 addresses
 			if ipv4 := ip.To4(); ipv4 != nil {
-				addrs = append(addrs, fmt.Sprintf("http://%s/ (%s)", ipv4, iface.Name))
+				addrs = append(addrs, fmt.Sprintf("%s (%s)", ipv4, iface.Name))
 			}
 		}
 	}
