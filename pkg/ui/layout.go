@@ -101,13 +101,24 @@ func NewUI() *UI {
 }
 
 // createEnhancedTitle creates a slightly larger title using box drawing characters
-func createEnhancedTitle(title string) string {
+func createEnhancedTitle(title string, copyright string) string {
+	// Calculate padding needed to right-align the copyright text
+	// Add extra padding to account for the box characters
+	totalWidth := 80                // Assuming a standard width, adjust as needed
+	titleBoxWidth := len(title) + 4 // title + box chars + spaces
+	padding := totalWidth - titleBoxWidth - len(copyright)
+
+	if padding < 1 {
+		padding = 1 // Ensure at least one space
+	}
+
 	// Create a box around the title to make it stand out
 	topBorder := "╔" + strings.Repeat("═", len(title)+2) + "╗"
+	middleLine := fmt.Sprintf("║ %s ║%s%s", title, strings.Repeat(" ", padding), copyright)
 	bottomBorder := "╚" + strings.Repeat("═", len(title)+2) + "╝"
 
 	// Build the enhanced title with spacing for better visibility
-	enhancedTitle := fmt.Sprintf("%s\n║ %s ║\n%s", topBorder, title, bottomBorder)
+	enhancedTitle := fmt.Sprintf("%s\n%s\n%s", topBorder, middleLine, bottomBorder)
 
 	return enhancedTitle
 }
@@ -118,16 +129,15 @@ func (ui *UI) updateSystemInfoPeriodically() {
 		ui.app.QueueUpdateDraw(func() {
 			info := system.GetSystemInfo()
 
-			// Create a slightly enhanced title
-			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER")
-
-			// Get current year for copyright
+			// Get copyright text
 			copyrightText := "by Sar Infocom"
 
+			// Create a slightly enhanced title with copyright
+			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER", copyrightText)
+
 			// Update header text with the enhanced title and other information
-			ui.header.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
+			ui.header.SetText(fmt.Sprintf("\n[::b]%s[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
 				enhancedTitle,
-				copyrightText,
 				info.CPUInfo,
 				info.MemoryInfo,
 				info.GPUInfo,
