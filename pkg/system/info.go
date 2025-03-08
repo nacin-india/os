@@ -9,10 +9,8 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
-	psnet "github.com/shirou/gopsutil/v3/net"
 )
 
 // SystemInfo holds all system information
@@ -26,7 +24,6 @@ type SystemInfo struct {
 	IPAddresses []string
 	CPUTemp     string
 	GPUTemp     string
-	DiskInfo    []string
 	NetworkInfo []string
 	Platform    string
 	OSInfo      string
@@ -56,7 +53,7 @@ func GetSystemInfo() SystemInfo {
 	// Get CPU usage
 	cpuPercent, err := cpu.Percent(100*time.Millisecond, false)
 	if err == nil && len(cpuPercent) > 0 {
-		info.CPUUsage = fmt.Sprintf("CPU Usage: %02d%%", int(cpuPercent[0]))
+		info.CPUUsage = fmt.Sprintf("CPU Usage: %2d%%", int(cpuPercent[0]))
 	} else {
 		info.CPUUsage = "CPU Usage: N/A"
 	}
@@ -64,8 +61,8 @@ func GetSystemInfo() SystemInfo {
 	// Get memory information
 	memInfo, err := mem.VirtualMemory()
 	if err == nil {
-		info.MemoryInfo = fmt.Sprintf("%.1f GB System Memory", float64(memInfo.Total)/(1024*1024*1024))
-		info.RAMUsage = fmt.Sprintf("RAM Usage: %02d%%", int(memInfo.UsedPercent))
+		info.MemoryInfo = fmt.Sprintf("%d GB System Memory (%.1f GB Used)", memInfo.Total/(1024*1024*1024), float64(memInfo.Used)/(1024*1024*1024))
+		info.RAMUsage = fmt.Sprintf("RAM Usage: %2d%%", int(memInfo.UsedPercent))
 	} else {
 		info.MemoryInfo = "Memory information unavailable"
 		info.RAMUsage = "RAM Usage: N/A"
@@ -74,7 +71,7 @@ func GetSystemInfo() SystemInfo {
 	// Get uptime information
 	if err == nil {
 		uptime := time.Duration(hostInfo.Uptime) * time.Second
-		info.UptimeInfo = fmt.Sprintf("System uptime: %s", formatDuration(uptime))
+		info.UptimeInfo = fmt.Sprintf("Uptime: %s", formatDuration(uptime))
 	} else {
 		info.UptimeInfo = "Uptime information unavailable"
 	}
@@ -97,12 +94,6 @@ func GetSystemInfo() SystemInfo {
 		// Fallback to simulated values if real data not available
 		info.CPUTemp = fmt.Sprintf("CPU Temp: %d°C", int(45.0+5.0*float64(time.Now().Second()%10)/10.0))
 	}
-
-	// Get disk information
-	info.DiskInfo = getDiskInfo()
-
-	// Get network information
-	info.NetworkInfo = getNetworkInfo()
 
 	// Get IP addresses
 	info.IPAddresses = getIPAddresses()
@@ -221,81 +212,4 @@ func getCPUTemperature() int {
 	}
 
 	return temperature
-}
-
-// getDiskInfo returns information about disk usage
-func getDiskInfo() []string {
-	var diskInfoList []string
-
-	partitions, err := disk.Partitions(false)
-	if err != nil {
-		return []string{"Disk information unavailable"}
-	}
-
-	for _, partition := range partitions {
-		usage, err := disk.Usage(partition.Mountpoint)
-		if err != nil {
-			continue
-		}
-
-		// Skip small or system partitions
-		if usage.Total < 1024*1024*1024 { // 1GB
-			continue
-		}
-
-		diskInfo := fmt.Sprintf("%s: %.1f GB / %.1f GB (%d%% used)",
-			partition.Mountpoint,
-			float64(usage.Used)/(1024*1024*1024),
-			float64(usage.Total)/(1024*1024*1024),
-			int(usage.UsedPercent))
-
-		diskInfoList = append(diskInfoList, diskInfo)
-	}
-
-	if len(diskInfoList) == 0 {
-		return []string{"No disk information available"}
-	}
-
-	return diskInfoList
-}
-
-// getNetworkInfo returns information about network interfaces
-func getNetworkInfo() []string {
-	var netInfoList []string
-
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return []string{"Network information unavailable"}
-	}
-
-	ioCounters, err := psnet.IOCounters(true)
-	if err != nil {
-		return []string{"Network I/O information unavailable"}
-	}
-
-	for _, nic := range interfaces {
-		// Skip loopback and interfaces without addresses
-		if nic.Flags&net.FlagLoopback != 0 || nic.Flags&net.FlagUp == 0 {
-			continue
-		}
-
-		// Find corresponding IO stats
-		for _, io := range ioCounters {
-			if io.Name == nic.Name {
-				netInfo := fmt.Sprintf("%s: ↑ %.2f MB, ↓ %.2f MB",
-					nic.Name,
-					float64(io.BytesSent)/(1024*1024),
-					float64(io.BytesRecv)/(1024*1024))
-
-				netInfoList = append(netInfoList, netInfo)
-				break
-			}
-		}
-	}
-
-	if len(netInfoList) == 0 {
-		return []string{"No active network interfaces found"}
-	}
-
-	return netInfoList
 }
