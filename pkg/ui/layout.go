@@ -15,6 +15,7 @@ type UI struct {
 	app        *tview.Application
 	mainFlex   *tview.Flex
 	header     *tview.TextView
+	copyright  *tview.TextView
 	middle     *tview.TextView
 	footer     *tview.TextView
 	stats      *tview.TextView
@@ -49,14 +50,18 @@ func NewUI() *UI {
 	// Create header
 	header := createTextView(white, darkGray, tview.AlignLeft)
 
+	// Create copyright text view - right aligned
+	copyright := createTextView(white, darkGray, tview.AlignRight)
+
 	// Create stats panel for system usage - use black text on yellow for contrast
 	stats := createTextView(black, yellow, tview.AlignRight)
 	stats.SetWordWrap(true) // Enable word wrap for better space utilization
 
-	// Create header flex without stats
+	// Create header flex with title on left and copyright on right
 	headerFlex := tview.NewFlex().SetDirection(tview.FlexColumn)
 	headerFlex.AddItem(tview.NewBox().SetBackgroundColor(darkGray), 2, 0, false)
 	headerFlex.AddItem(header, 0, 1, false)
+	headerFlex.AddItem(copyright, 0, 1, false)
 	headerFlex.AddItem(tview.NewBox().SetBackgroundColor(darkGray), 2, 0, false)
 	headerFlex.SetBackgroundColor(darkGray)
 
@@ -80,6 +85,7 @@ func NewUI() *UI {
 		app:        app,
 		mainFlex:   mainFlex,
 		header:     header,
+		copyright:  copyright,
 		middle:     middle,
 		footer:     nil, // No footer needed anymore
 		stats:      stats,
@@ -101,24 +107,14 @@ func NewUI() *UI {
 }
 
 // createEnhancedTitle creates a slightly larger title using box drawing characters
-func createEnhancedTitle(title string, copyright string) string {
-	// Calculate padding needed to right-align the copyright text
-	// Add extra padding to account for the box characters
-	totalWidth := 80                // Assuming a standard width, adjust as needed
-	titleBoxWidth := len(title) + 4 // title + box chars + spaces
-	padding := totalWidth - titleBoxWidth - len(copyright)
-
-	if padding < 1 {
-		padding = 1 // Ensure at least one space
-	}
-
+func createEnhancedTitle(title string) string {
 	// Create a box around the title to make it stand out
 	topBorder := "╔" + strings.Repeat("═", len(title)+2) + "╗"
-	middleLine := fmt.Sprintf("║ %s ║%s%s", title, strings.Repeat(" ", padding), copyright)
+	titleLine := fmt.Sprintf("║ %s ║", title)
 	bottomBorder := "╚" + strings.Repeat("═", len(title)+2) + "╝"
 
 	// Build the enhanced title with spacing for better visibility
-	enhancedTitle := fmt.Sprintf("%s\n%s\n%s", topBorder, middleLine, bottomBorder)
+	enhancedTitle := fmt.Sprintf("%s\n%s\n%s", topBorder, titleLine, bottomBorder)
 
 	return enhancedTitle
 }
@@ -132,16 +128,21 @@ func (ui *UI) updateSystemInfoPeriodically() {
 			// Get copyright text
 			copyrightText := "by Sar Infocom"
 
-			// Create a slightly enhanced title with copyright
-			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER", copyrightText)
+			// Create a slightly enhanced title
+			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER")
 
-			// Update header text with the enhanced title and other information
-			ui.header.SetText(fmt.Sprintf("\n[::b]%s[::]\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
+			// Update header text with the enhanced title
+			ui.header.SetText(fmt.Sprintf("\n%s\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
 				enhancedTitle,
 				info.CPUInfo,
 				info.MemoryInfo,
 				info.GPUInfo,
 				info.UptimeInfo))
+
+			// Update copyright text - add extra newlines to align vertically with the title
+			// The title box has 3 lines: top border, title line, bottom border
+			// We need to match the exact vertical position of the title line
+			ui.copyright.SetText(fmt.Sprintf("\n\n[::b]%s[::]\n\n\n\n\n\n", copyrightText))
 
 			// Update stats panel in the bottom yellow section with bold text
 			ui.stats.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n",
