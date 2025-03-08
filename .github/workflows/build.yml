@@ -1,0 +1,33 @@
+name: Build Go Application
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache: true
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build -v -o nacin-os
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nacin-os-linux
+          path: nacin-os
+          retention-days: 7
