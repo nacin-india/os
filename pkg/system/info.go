@@ -59,7 +59,7 @@ func GetSystemInfo() SystemInfo {
 	// Get memory information
 	memInfo, err := mem.VirtualMemory()
 	if err == nil {
-		info.MemoryInfo = fmt.Sprintf("%d GB System Memory (%.1f GB Used)", memInfo.Total/(1024*1024*1024), float64(memInfo.Used)/(1024*1024*1024))
+		info.MemoryInfo = fmt.Sprintf("%.1f GB System Memory (%.1f GB Used)", float64(memInfo.Total/(1000*1000*1000)), float64(memInfo.Used)/(1000*1000*1000))
 		info.RAMUsage = fmt.Sprintf("RAM Usage: %2d%%", int(memInfo.UsedPercent))
 	} else {
 		info.MemoryInfo = "Memory information unavailable"
