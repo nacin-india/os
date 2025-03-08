@@ -25,14 +25,13 @@ type UI struct {
 // createTextView creates a new text view with specified properties
 func createTextView(color tcell.Color, bgColor tcell.Color, align int) *tview.TextView {
 	tv := tview.NewTextView()
-	// Use only high contrast colors - white or black
 	if color != tcell.ColorWhite && color != tcell.ColorBlack {
-		color = tcell.ColorWhite // Default to white for better contrast
+		color = tcell.ColorBlack
 	}
 	tv.SetTextColor(color)
 	tv.SetTextAlign(align)
 	tv.SetBackgroundColor(bgColor)
-	tv.SetDynamicColors(true) // Enable style tags
+	tv.SetDynamicColors(true)
 	return tv
 }
 
@@ -42,7 +41,7 @@ func NewUI() *UI {
 	mainFlex := tview.NewFlex().SetDirection(tview.FlexRow)
 
 	// Define colors - using high contrast colors only
-	darkGray := tcell.ColorDarkSlateGray
+	darkGray := tcell.ColorBlack
 	yellow := tcell.ColorYellow
 	white := tcell.ColorWhite
 	black := tcell.ColorBlack
@@ -109,9 +108,9 @@ func NewUI() *UI {
 // createEnhancedTitle creates a slightly larger title using box drawing characters
 func createEnhancedTitle(title string) string {
 	// Create a box around the title to make it stand out
-	topBorder := "╔" + strings.Repeat("═", len(title)+2) + "╗"
-	titleLine := fmt.Sprintf("║ %s ║", title)
-	bottomBorder := "╚" + strings.Repeat("═", len(title)+2) + "╝"
+	topBorder := "┌" + strings.Repeat("─", len(title)+2) + "┐"
+	titleLine := fmt.Sprintf("│ %s │", title)
+	bottomBorder := "└" + strings.Repeat("─", len(title)+2) + "┘"
 
 	// Build the enhanced title with spacing for better visibility
 	enhancedTitle := fmt.Sprintf("%s\n%s\n%s", topBorder, titleLine, bottomBorder)
@@ -124,14 +123,9 @@ func (ui *UI) updateSystemInfoPeriodically() {
 	for {
 		ui.app.QueueUpdateDraw(func() {
 			info := system.GetSystemInfo()
-
-			// Get copyright text
 			copyrightText := "by Sar Infocom"
-
-			// Create a slightly enhanced title
 			enhancedTitle := createEnhancedTitle("NACIN EXAM SERVER")
 
-			// Update header text with the enhanced title
 			ui.header.SetText(fmt.Sprintf("\n%s\n\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n[::b]%s[::]\n\n",
 				enhancedTitle,
 				info.CPUInfo,
@@ -139,17 +133,12 @@ func (ui *UI) updateSystemInfoPeriodically() {
 				info.GPUInfo,
 				info.UptimeInfo))
 
-			// Update copyright text - add extra newlines to align vertically with the title
-			// The title box has 3 lines: top border, title line, bottom border
-			// We need to match the exact vertical position of the title line
 			ui.copyright.SetText(fmt.Sprintf("\n\n[::b]%s[::]\n\n\n\n\n\n", copyrightText))
 
-			// Update stats panel in the bottom yellow section with bold text
 			ui.stats.SetText(fmt.Sprintf("\n[::b]%s[::]\n[::b]%s[::]\n",
 				info.CPUUsage,
 				info.RAMUsage))
 
-			// Update middle text for IP addresses with bold text
 			middleText := "\n[::b]IP addresses:[::]\n"
 			for _, ip := range info.IPAddresses {
 				middleText += fmt.Sprintf("[::b]%s[::]\n", ip)
@@ -164,5 +153,5 @@ func (ui *UI) updateSystemInfoPeriodically() {
 
 // Run runs the UI application
 func (ui *UI) Run() error {
-	return ui.app.SetRoot(ui.mainFlex, true).EnableMouse(false).Run()
+	return ui.app.SetRoot(ui.mainFlex, true).EnableMouse(true).Run()
 }

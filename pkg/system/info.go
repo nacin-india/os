@@ -132,7 +132,7 @@ func getIPAddresses() []string {
 	}
 
 	if len(addrs) == 0 {
-		return []string{"No IPv4 addresses found"}
+		return []string{"No IP addresses found"}
 	}
 
 	return addrs
