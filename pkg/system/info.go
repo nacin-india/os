@@ -22,8 +22,6 @@ type SystemInfo struct {
 	CPUUsage    string
 	UptimeInfo  string
 	IPAddresses []string
-	CPUTemp     string
-	GPUTemp     string
 	NetworkInfo []string
 	Platform    string
 	OSInfo      string
@@ -76,24 +74,8 @@ func GetSystemInfo() SystemInfo {
 		info.UptimeInfo = "Uptime information unavailable"
 	}
 
-	// Get GPU information and temperature
-	gpuInfo, gpuTemp := getGPUInfo()
-	info.GPUInfo = gpuInfo
-	if gpuTemp > 0 {
-		info.GPUTemp = fmt.Sprintf("GPU Temp: %d°C", gpuTemp)
-	} else {
-		// Fallback to simulated values if real data not available
-		info.GPUTemp = fmt.Sprintf("GPU Temp: %d°C", int(60.0+10.0*float64(time.Now().Second()%10)/10.0))
-	}
-
-	// Get CPU temperature
-	cpuTemp := getCPUTemperature()
-	if cpuTemp > 0 {
-		info.CPUTemp = fmt.Sprintf("CPU Temp: %d°C", cpuTemp)
-	} else {
-		// Fallback to simulated values if real data not available
-		info.CPUTemp = fmt.Sprintf("CPU Temp: %d°C", int(45.0+5.0*float64(time.Now().Second()%10)/10.0))
-	}
+	// Get GPU information
+	info.GPUInfo = getGPUInfo()
 
 	// Get IP addresses
 	info.IPAddresses = getIPAddresses()
@@ -157,14 +139,13 @@ func getIPAddresses() []string {
 }
 
 // getGPUInfo attempts to get GPU information using platform-specific methods
-func getGPUInfo() (string, int) {
-	// Default values
+func getGPUInfo() string {
+	// Default value
 	gpuInfo := "GPU information unavailable"
-	var temperature int = 0
 
 	// For NVIDIA GPUs on supported platforms
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
-		cmd := exec.Command("nvidia-smi", "--query-gpu=name,temperature.gpu", "--format=csv,noheader,nounits")
+		cmd := exec.Command("nvidia-smi", "--query-gpu=name", "--format=csv,noheader,nounits")
 		output, err := cmd.Output()
 		if err == nil {
 			lines := strings.Split(string(output), "\n")
@@ -172,44 +153,13 @@ func getGPUInfo() (string, int) {
 				if line == "" {
 					continue
 				}
-				parts := strings.Split(line, ", ")
-				if len(parts) >= 2 {
-					gpuInfo = strings.TrimSpace(parts[0])
-					fmt.Sscanf(strings.TrimSpace(parts[1]), "%d", &temperature)
-					break
-				}
+				gpuInfo = strings.TrimSpace(line)
+				break
 			}
 		}
 	} else if runtime.GOOS == "darwin" {
-		// macOS doesn't have nvidia-smi, return simulated value
 		gpuInfo = "Apple GPU"
 	}
 
-	return gpuInfo, temperature
-}
-
-// getCPUTemperature attempts to get CPU temperature using platform-specific methods
-func getCPUTemperature() int {
-	var temperature int = 0
-
-	if runtime.GOOS == "linux" {
-		// Try to read from sensors on Linux
-		cmd := exec.Command("sensors", "-j")
-		output, err := cmd.Output()
-		if err == nil {
-			// This is a simplified approach - in a real app you'd parse the JSON
-			if strings.Contains(string(output), "temp") {
-				// Just a placeholder - real implementation would parse the JSON properly
-				temperature = 50 // Placeholder value
-			}
-		}
-	} else if runtime.GOOS == "darwin" {
-		// macOS temperature via SMC would require a C binding or external tool
-		// This is just a placeholder
-	} else if runtime.GOOS == "windows" {
-		// Windows would use WMI queries
-		// This is just a placeholder
-	}
-
-	return temperature
+	return gpuInfo
 }
