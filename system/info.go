@@ -29,77 +29,57 @@ type SystemInfo struct {
 
 // GetSystemInfo returns current system information
 func GetSystemInfo() SystemInfo {
-	info := SystemInfo{}
+	info := SystemInfo{
+		Platform:   runtime.GOOS,
+		OSInfo:     "OS information unavailable",
+		CPUInfo:    "CPU information unavailable",
+		CPUUsage:   "CPU Usage: N/A",
+		MemoryInfo: "Memory information unavailable",
+		RAMUsage:   "RAM Usage: N/A",
+		UptimeInfo: "Uptime information unavailable",
+	}
 
-	// Get platform information
-	info.Platform = runtime.GOOS
-	hostInfo, err := host.Info()
-	if err == nil {
+	// Get platform and host information
+	if hostInfo, err := host.Info(); err == nil {
 		info.OSInfo = fmt.Sprintf("%s %s (%s)", hostInfo.Platform, hostInfo.PlatformVersion, hostInfo.PlatformFamily)
-	} else {
-		info.OSInfo = "OS information unavailable"
+		uptime := time.Duration(hostInfo.Uptime) * time.Second
+		hours, mins, secs := int(uptime.Hours()), int(uptime.Minutes())%60, int(uptime.Seconds())%60
+		info.UptimeInfo = fmt.Sprintf("Uptime: %d hours %02d minutes %02d seconds", hours, mins, secs)
 	}
 
 	// Get CPU information
-	cpuInfo, err := cpu.Info()
-	if err == nil && len(cpuInfo) > 0 {
+	if cpuInfo, err := cpu.Info(); err == nil && len(cpuInfo) > 0 {
 		info.CPUInfo = fmt.Sprintf("%d x %s @ %.2f GHz", len(cpuInfo), cpuInfo[0].ModelName, cpuInfo[0].Mhz/1000.0)
-	} else {
-		info.CPUInfo = "CPU information unavailable"
 	}
 
 	// Get CPU usage
-	cpuPercent, err := cpu.Percent(100*time.Millisecond, false)
-	if err == nil && len(cpuPercent) > 0 {
+	if cpuPercent, err := cpu.Percent(100*time.Millisecond, false); err == nil && len(cpuPercent) > 0 {
 		info.CPUUsage = fmt.Sprintf("CPU Usage: %2d%%", int(cpuPercent[0]))
-	} else {
-		info.CPUUsage = "CPU Usage: N/A"
 	}
 
 	// Get memory information
-	memInfo, err := mem.VirtualMemory()
-	if err == nil {
-		info.MemoryInfo = fmt.Sprintf("%.1f GB System Memory (%.1f GB Used)", float64(memInfo.Total/(1000*1000*1000)), float64(memInfo.Used)/(1000*1000*1000))
+	if memInfo, err := mem.VirtualMemory(); err == nil {
+		info.MemoryInfo = fmt.Sprintf("%.1f GB System Memory (%.1f GB Used)",
+			float64(memInfo.Total/(1000*1000*1000)),
+			float64(memInfo.Used/(1000*1000*1000)))
 		info.RAMUsage = fmt.Sprintf("RAM Usage: %2d%%", int(memInfo.UsedPercent))
-	} else {
-		info.MemoryInfo = "Memory information unavailable"
-		info.RAMUsage = "RAM Usage: N/A"
 	}
 
-	// Get uptime information
-	if err == nil {
-		uptime := time.Duration(hostInfo.Uptime) * time.Second
-		info.UptimeInfo = fmt.Sprintf("Uptime: %s", formatDuration(uptime))
-	} else {
-		info.UptimeInfo = "Uptime information unavailable"
-	}
-
-	// Get GPU information
+	// Get GPU and IP information
 	info.GPUInfo = getGPUInfo()
-
-	// Get IP addresses
 	info.IPAddresses = getIPAddresses()
 
 	return info
 }
 
-// formatDuration formats uptime in a human-readable format
-func formatDuration(d time.Duration) string {
-	hours := int(d.Hours())
-	mins := int(d.Minutes()) % 60
-	secs := int(d.Seconds()) % 60
-
-	return fmt.Sprintf("%d hours %02d minutes %02d seconds", hours, mins, secs)
-}
-
 // getIPAddresses returns a list of non-loopback IPv4 addresses
 func getIPAddresses() []string {
-	var addrs []string
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return []string{"Error getting network interfaces"}
 	}
 
+	var addrs []string
 	for _, iface := range ifaces {
 		// Skip loopback interfaces
 		if iface.Flags&net.FlagLoopback != 0 {
@@ -120,13 +100,9 @@ func getIPAddresses() []string {
 				ip = v.IP
 			}
 
-			if ip == nil || ip.IsLoopback() {
-				continue
-			}
-
-			// Only include IPv4 addresses
-			if ipv4 := ip.To4(); ipv4 != nil {
-				addrs = append(addrs, fmt.Sprintf("%s (%s)", ipv4, iface.Name))
+			// Only include non-loopback IPv4 addresses
+			if ip != nil && !ip.IsLoopback() && ip.To4() != nil {
+				addrs = append(addrs, fmt.Sprintf("%s (%s)", ip.To4(), iface.Name))
 			}
 		}
 	}
@@ -134,32 +110,23 @@ func getIPAddresses() []string {
 	if len(addrs) == 0 {
 		return []string{"No IP addresses found"}
 	}
-
 	return addrs
 }
 
 // getGPUInfo attempts to get GPU information using platform-specific methods
 func getGPUInfo() string {
-	// Default value
-	gpuInfo := "GPU information unavailable"
-
-	// For NVIDIA GPUs on supported platforms
-	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "darwin":
+		return "Apple GPU"
+	case "linux", "windows":
 		cmd := exec.Command("nvidia-smi", "--query-gpu=name", "--format=csv,noheader,nounits")
-		output, err := cmd.Output()
-		if err == nil {
-			lines := strings.Split(string(output), "\n")
-			for _, line := range lines {
-				if line == "" {
-					continue
+		if output, err := cmd.Output(); err == nil {
+			for _, line := range strings.Split(string(output), "\n") {
+				if line = strings.TrimSpace(line); line != "" {
+					return line
 				}
-				gpuInfo = strings.TrimSpace(line)
-				break
 			}
 		}
-	} else if runtime.GOOS == "darwin" {
-		gpuInfo = "Apple GPU"
 	}
-
-	return gpuInfo
+	return "GPU information unavailable"
 }
