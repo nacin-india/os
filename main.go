@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/nacin/nacin-os/pkg/ui"
+	"server/ui"
 )
 
 func main() {

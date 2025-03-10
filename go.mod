@@ -1,4 +1,4 @@
-module github.com/nacin/nacin-os
+module server
 
 go 1.21
 
