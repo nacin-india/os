@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"server/system"
+
 	"github.com/gdamore/tcell/v2"
-	"github.com/nacin/nacin-os/pkg/system"
 	"github.com/rivo/tview"
 )
 
